@@ -1,0 +1,9 @@
+DOMAIN="www.mywebsite.com"
+WEBSITE_TYPE=wp-commerce
+WEBSITE_VERSION=0.0.3
+HOST_USER="webuser"
+HOST_PASSWD="webpwd"
+DATABASE_NAME="mywebsite"
+DATABASE_USER="dbuser"
+DATABASE_PASSWD="dbpwd"
+DOCUMENT_ROOT=/home/$HOST_USER/www
