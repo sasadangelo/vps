@@ -15,11 +15,6 @@ export LC_ALL=en_US.UTF-8
 # Return: none
 ###################################################################
 nginx_go() {
-#    sudo useradd -d /home/webmaster -g admin -s /bin/bash -p $(openssl passwd -1 $WEBMASTER_PASSWORD) $WEBMASTER_USER
-#    sudo mkdir -p /home/webmaster/.ssh
-#    sudo mkdir -p /home/webmaster/www
-#    sudo mv /root/.ssh/authorized_keys /home/webmaster/.ssh/
-#    sudo chown -R webmaster:admin /home/webmaster
     sudo apt-get -y install nginx
 }
 
@@ -69,12 +64,10 @@ php_go() {
 #                  properly.
 ################################################################### 
 tools_go() {
-#    export LANGUAGE=en_US.UTF-8
-#    export LANG=en_US.UTF-8
-#    export LC_ALL=en_US.UTF-8
     sudo locale-gen en_US.UTF-8
     sudo dpkg-reconfigure locales
     sudo apt-get -y install vsftpd
+    sudo apt-get -y install sendmail
 }
 
 ###################################################################
@@ -120,6 +113,18 @@ create_lock() {
 }
 
 ###################################################################
+# wpcli_go
+#
+# Input: none
+# Description: this function install wp-cli.
+###################################################################
+wpcli_go() {
+    curl -O https://raw.githubusercontent.com/wp-cli/builds/gh-pages/phar/wp-cli.phar
+    chmod +x wp-cli.phar
+    sudo mv wp-cli.phar /usr/local/bin/wp
+}
+
+###################################################################
 # main
 #
 # Input: none
@@ -133,6 +138,7 @@ main() {
     mysql_go
     php_go
     nginx_go
+    wpcli_go
     create_lock
 }
 

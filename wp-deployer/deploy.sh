@@ -1,4 +1,7 @@
-source configure.sh 
+#!/bin/bash -e
+SCRIPT_DIR=$( cd $(dirname $0) ; pwd -P )
+
+source $SCRIPT_DIR/configure.sh 
 
 MYSQL_USER=root
 MYSQL_PWD=root
@@ -6,7 +9,7 @@ MYSQL_PWD=root
 ENCRYPTED_PASSWD=$(openssl passwd -1 $HOST_PASSWD)
 
 ###################################################################
-# main
+# create_account
 #
 # Input: none
 # Description: this function creates the system account. The
@@ -18,7 +21,6 @@ ENCRYPTED_PASSWD=$(openssl passwd -1 $HOST_PASSWD)
 create_account() {
     sudo useradd -d /home/$HOST_USER -g admin -s /bin/bash -p $ENCRYPTED_PASSWD $HOST_USER
     sudo mkdir -p $DOCUMENT_ROOT
-    sudo chown -R $HOST_USER:admin $HOST_USER
     sudo chown -R $HOST_USER:admin $DOCUMENT_ROOT
 }
 
