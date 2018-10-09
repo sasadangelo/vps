@@ -39,21 +39,19 @@ create_account() {
 download_wp() {
     echo "=== install wordpress in $DOCUMENT_ROOT/$DOMAIN"
 
-    # Download and extract wordpress
-    sudo wget https://github.com/sasadangelo/$WEBSITE_TYPE/archive/$WEBSITE_VERSION.tar.gz -O $DOCUMENT_ROOT/$WEBSITE_VERSION.tar
-    sudo tar xvf $DOCUMENT_ROOT/$WEBSITE_VERSION.tar -C $DOCUMENT_ROOT
-    sudo mv $DOCUMENT_ROOT/$WEBSITE_TYPE-$WEBSITE_VERSION $DOCUMENT_ROOT/$DOMAIN
-    sudo chown -R $HOST_USER:admin $DOCUMENT_ROOT/$DOMAIN
-    sudo rm -f $DOCUMENT_ROOT/$WEBSITE_VERSION.tar.gz
+    # Create new Document Root
+    if [ -d "$DOCUMENT_ROOT/$DOMAIN" ]; then
+        sudo rm -rf $DOCUMENT_ROOT/$DOMAIN
+    fi
+    sudo mkdir -p $DOCUMENT_ROOT/$DOMAIN
+    sudo chown $HOST_USER:admin $DOCUMENT_ROOT/$DOMAIN
 
-    # Configure wp-config.php
-    sed "s/DATABASE_NAME/$DATABASE_NAME/g" wordpress/wp-config.php > tmp/wp-config.php
-    sed -i "s/DATABASE_USER/$DATABASE_USER/g" tmp/wp-config.php
-    sed -i "s/DATABASE_PASSWD/$DATABASE_PASSWD/g" tmp/wp-config.php
-    sed -i "s:DOMAIN:$DOMAIN:g" tmp/wp-config.php
-    sudo cp tmp/wp-config.php $DOCUMENT_ROOT/$DOMAIN
-    sudo chown $HOST_USER:admin $DOCUMENT_ROOT/$DOMAIN/wp-config.php
-}
+    # Download the WordPress core files and configure wp-config.php
+    sudo su - $HOST_USER -c "cd $DOCUMENT_ROOT/$DOMAIN; \
+	wp core download --locale=$WP_LOCALE; \
+	wp config create --dbname=$DB_NAME --dbuser=$DB_USER \
+		--dbpass=$DB_PASSWD --skip-check"
+} 
 
 ###################################################################
 # create_db
@@ -65,16 +63,69 @@ download_wp() {
 ###################################################################
 create_db() {
     echo "=== create database $DB_NAME"
-    # Create database
-    sed "s/DATABASE_NAME/$DATABASE_NAME/g" mysql/database.sql > tmp/database.sql 
-    sed -i "s/DATABASE_USER/$DATABASE_USER/g" tmp/database.sql
-    sed -i "s/DATABASE_PASSWD/$DATABASE_PASSWD/g" tmp/database.sql
-    mysql -u $MYSQL_USER -p$MYSQL_PWD < tmp/database.sql
+    # Create MySQL user if does not exist
+    DB_USER_EXIST="$(mysql -u $MYSQL_USER -p$MYSQL_PASSWD -sse "SELECT EXISTS(SELECT 1 FROM mysql.user WHERE user = '$DB_USER')")"
 
-    # Import wordpress data into the database
-    #sudo sed -i "s/utf8mb4_unicode_520_ci/utf8mb4_unicode_ci/g" mysql/mywebsite_db.sql
-    sudo sed -i "s:WEBSITE:$DOMAIN:g" $DOCUMENT_ROOT/$DOMAIN/mywebsite_db.sql
-    mysql -u $DATABASE_USER -p$DATABASE_PASSWD $DATABASE_NAME < $DOCUMENT_ROOT/$DOMAIN/mywebsite_db.sql
+    if [ "$DB_USER_EXIST" != 1 ]; then
+        mysql -u $MYSQL_USER -p$MYSQL_PASSWD -sse "CREATE USER $DB_USER@localhost IDENTIFIED BY \"$DB_PASSWD\";"
+        mysql -u $MYSQL_USER -p$MYSQL_PASSWD -sse "GRANT ALL PRIVILEGES ON $DB_NAME.* TO $DB_USER@localhost;"
+        mysql -u $MYSQL_USER -p$MYSQL_PASSWD -sse "FLUSH PRIVILEGES;"
+    fi
+
+    # Create database
+    DB_NAME_EXIST="$(mysql -u $MYSQL_USER -p$MYSQL_PASSWD -sse "SELECT EXISTS(SELECT 1 FROM INFORMATION_SCHEMA.SCHEMATA WHERE SCHEMA_NAME = '$DB_NAME')")"
+
+    if [ "$DB_NAME_EXIST" = "1" ]; then
+        mysql -u $MYSQL_USER -p$MYSQL_PASSWD -sse "DROP database $DB_NAME;"
+    fi 
+    sudo su - $HOST_USER -c "cd $DOCUMENT_ROOT/$DOMAIN; \
+        wp db create --dbuser=$DB_USER --dbpass=$DB_PASSWD"
+}
+
+###################################################################
+# install_wp
+#
+# Input: none
+# Description: this function install Wordpress in the new database.
+# Return: none
+###################################################################
+install_wp() {
+    echo "=== install wordpress"
+    sudo su - $HOST_USER -c "cd $DOCUMENT_ROOT/$DOMAIN; \
+	wp core install --url=\"$DOMAIN\" \
+	--title=\"$WP_NAME\" --admin_user=\"$WP_USER\" \
+	--admin_password=\"$WP_PASSWD\" --admin_email=\"$WP_USER_EMAIL\""
+}
+
+###################################################################
+# configure_wp_settings
+#
+# Input: none
+# Description: this function configure Wordpress Settings menu pages.
+# Return: none
+###################################################################
+configure_wp_settings() {
+    echo "====== configure wordpress settings"
+
+    # Modify Settings->General
+
+    # MOdify blog description
+    sudo su - $HOST_USER -c "cd $DOCUMENT_ROOT/$DOMAIN; \
+        wp option update blogdescription \"$WP_DESCRIPTION\""
+}
+
+###################################################################
+# configure_wp
+#
+# Input: none
+# Description: this function configure Wordpress.
+# Return: none
+###################################################################
+configure_wp() {
+    echo "=== configure wordpress"
+
+    # Modify Settings configuration
+    configure_wp_settings
 }
 
 ###################################################################
@@ -109,6 +160,8 @@ main() {
     create_account
     download_wp
     create_db
+    install_wp
+    configure_wp
     configure_nginx
     rm -rf tmp
     echo "================================================================="
