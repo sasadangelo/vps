@@ -109,12 +109,56 @@ configure_wp_settings() {
 
     # Modify Settings->General
 
-    # MOdify blog description
+    # Modify blog description
     sudo su - $HOST_USER -c "cd $DOCUMENT_ROOT/$DOMAIN; \
         wp option update blogdescription \"$WP_DESCRIPTION\""
+    # Modify Settings->Reading
+    sudo su - $HOST_USER -c "cd $DOCUMENT_ROOT/$DOMAIN; \
+        wp option update posts_per_page 6"
+    sudo su - $HOST_USER -c "cd $DOCUMENT_ROOT/$DOMAIN; \
+        wp option update posts_per_rss 7"
+
+    # Modify Settings->Discussions
+    sudo su - $HOST_USER -c "cd $DOCUMENT_ROOT/$DOMAIN; \
+       wp option update thread_comments 0"
+    sudo su - $HOST_USER -c "cd $DOCUMENT_ROOT/$DOMAIN; \
+       wp option update moderation_notify 0"
+    sudo su - $HOST_USER -c "cd $DOCUMENT_ROOT/$DOMAIN; \
+       wp option update comment_whitelist 0"
+    sudo su - $HOST_USER -c "cd $DOCUMENT_ROOT/$DOMAIN; \
+       wp option update show_avatars 0"
+
+    # Modify Settings->Permalink
+    sudo su - $HOST_USER -c "cd $DOCUMENT_ROOT/$DOMAIN; \
+       wp rewrite structure '/%postname%.html' --hard"
+    sudo su - $HOST_USER -c "cd $DOCUMENT_ROOT/$DOMAIN; \
+       wp rewrite flush --hard"
 }
 
 ###################################################################
+# configure_wp_plugins
+#
+# Input: none
+# Description: this function install and configure Wordpress plugins.
+# Return: none
+###################################################################
+configure_wp_plugins() {
+    echo "====== configure wordpress plugins"
+
+    # Delete akismet and hello dolly plugins
+    sudo su - $HOST_USER -c "cd $DOCUMENT_ROOT/$DOMAIN; \
+       wp plugin delete akismet"
+    sudo su - $HOST_USER -c "cd $DOCUMENT_ROOT/$DOMAIN; \
+       wp plugin delete hello"
+
+    # Install plugins
+    export IFS=","
+    for plugin in $WP_PLUGINS; do
+        sudo su - $HOST_USER -c "cd $DOCUMENT_ROOT/$DOMAIN; \
+            wp plugin install $plugin --activate"
+    done
+}
+
 # configure_wp
 #
 # Input: none
@@ -126,6 +170,9 @@ configure_wp() {
 
     # Modify Settings configuration
     configure_wp_settings
+
+    # Install and configure Wordpress plugins
+    configure_wp_plugins
 }
 
 ###################################################################
