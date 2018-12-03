@@ -159,6 +159,21 @@ configure_wp_plugins() {
     done
 }
 
+###################################################################
+# configure_wp_aspect
+#
+# Input: none
+# Description: this function configure Wordpress aspects like
+#              themes, menu, etc.
+# Return: none
+###################################################################
+configure_wp_aspect() {
+    echo "====== configure wordpress aspect"
+
+    # Install the Theme
+    sudo su - $HOST_USER -c "cd $DOCUMENT_ROOT/$DOMAIN; \
+        wp theme install $WP_THEME --activate"
+}
 # configure_wp
 #
 # Input: none
@@ -173,6 +188,9 @@ configure_wp() {
 
     # Install and configure Wordpress plugins
     configure_wp_plugins
+
+    # Configure Wordpress aspect
+    configure_wp_aspect
 }
 
 ###################################################################
