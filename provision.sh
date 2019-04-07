@@ -10,7 +10,7 @@ export LC_ALL=en_US.UTF-8
 # nginx_go
 #
 # Input: none
-# Description: Nginx will be the HTTP server used for our VPS 
+# Description: Nginx will be the HTTP server used for our VPS
 #              solution. This function will install it.
 # Return: none
 ###################################################################
@@ -52,17 +52,17 @@ php_go() {
 # tools_go
 #
 # Input: none
-# Description: VPS and applications requires some basic tool and 
-#     configuration to run properly. This function will be 
+# Description: VPS and applications requires some basic tool and
+#     configuration to run properly. This function will be
 #     responsible to install and configure all the not main packages
-#     of our environment. So far the script has been tested only on 
+#     of our environment. So far the script has been tested only on
 #     Ubuntu 16 and Wordpress and here the packages and configuration
 #     required:
 #         vsftpd, necessary to update wordpress, its plugins and themes
 #         locales, Ubuntu 16 does not configure locales so it is required
 #                  this step to have some commands (i.e. apt-get) work
 #                  properly.
-################################################################### 
+###################################################################
 tools_go() {
     sudo locale-gen en_US.UTF-8
     sudo dpkg-reconfigure locales
@@ -86,7 +86,7 @@ check_lock() {
     if [[ -e /var/lock/vagrant-provision ]]; then
         cat 1>&2 << EOF
 ###################################################################
-# To re-run full provisioning, delete /var/lock/vagrant-provision 
+# To re-run full provisioning, delete /var/lock/vagrant-provision
 # and run:
 #
 #    $ vagrant provision
@@ -125,6 +125,18 @@ wpcli_go() {
 }
 
 ###################################################################
+# update_go
+#
+# Input: none
+# Description: this function upgrade packages of VPS
+# Return: none
+###################################################################
+update_go() {
+    sudo apt-get update
+    sudo apt-get -y upgrade
+}
+
+###################################################################
 # main
 #
 # Input: none
@@ -140,18 +152,6 @@ main() {
     nginx_go
     wpcli_go
     create_lock
-}
-
-###################################################################
-# update_go
-#
-# Input: none
-# Description: this function upgrade packages of VPS
-# Return: none
-###################################################################
-update_go() {
-    sudo apt-get update
-    sudo apt-get -y upgrade
 }
 
 ###################################################################

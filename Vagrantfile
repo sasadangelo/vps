@@ -2,7 +2,7 @@
 VAGRANTFILE_API_VERSION = "2"
 
 Vagrant.configure("2") do |config|
-    config.vm.hostname = 'vps-wordpress'
+    config.vm.hostname = 'mywebsite'
     config.vm.box = "ubuntu/trusty64"
     config.vm.network "private_network", ip: "192.168.100.2"
 
