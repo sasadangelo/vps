@@ -2,9 +2,16 @@
 
 Do you need a Wordpress website to run on a Virtual Private Server (VPS) or in your locale machine? Do you have a Wordpress website and you need a local copy for test purpose? Wordpress for VPS help you to create easily a running wordpress website on your local machine or remote VPS.
 
+The tool use Vagrant as abstraction layer on your Virtual Server provider to manage its lifecycle. The following Wordpress prerequisites are installed on the Virtual Machine:
+
+- Ubuntu Xenial 16.04
+- Nginx
+- MySQL
+- PHP 7
+
 ## Prerequisites
 
-Prerequisites for this project is [Vagrant](https://www.vagrantup.com/) that can be used to deploy your Wordpress stack in local on a remote VPS. For a local installation you need [Virtual Box](https://www.virtualbox.org/) installed on your local machine.
+Prerequisites for this project is [Vagrant](https://www.vagrantup.com/) that can be used to deploy your Wordpress stack in local on a remote VPS. For a local installation you need [Virtual Box](https://www.virtualbox.org/) installed on your local machine. The tool use an Ubuntu Xenial 16.04 as virtual machine.
 
 ## Wordpress on Local Virtual Machine
 
