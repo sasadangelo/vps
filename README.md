@@ -11,7 +11,7 @@ The tool use Vagrant as abstraction layer on your Virtual Server provider to man
 
 ## Prerequisites
 
-Prerequisites for this project is [Vagrant](https://www.vagrantup.com/) that can be used to deploy your Wordpress stack in local on a remote VPS. For a local installation you need [Virtual Box](https://www.virtualbox.org/) installed on your local machine. The tool use an Ubuntu Xenial 16.04 as virtual machine.
+Prerequisites for this project is [Vagrant](https://www.vagrantup.com/) that can be used to deploy your Wordpress stack in local on a remote VPS. For a local installation you need [Virtual Box](https://www.virtualbox.org/) installed on your local machine. The tool use an Ubuntu Xenial 16.04 as virtual machine. I run all tests on Mac computer, you can easily port the code on other operating systems with small changes.
 
 ## Wordpress on Local Virtual Machine
 
