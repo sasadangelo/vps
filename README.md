@@ -1,9 +1,10 @@
-# Virtual Private Server with Wordpress LNMP stack
-Questo è un progetto per realizzare un sito web fake della comunità di San Patrignano a scopo di demo per il nuovo chatbot che si sta realizzando in collaborazione con la comunità di San Patrignano.
+# Wordpress for Virtual Private Server (VPS)
 
-Per avere il sito web funzionante sulla vostra macchine è necessario scaricare e installare sia [Virtual Box](https://www.virtualbox.org/) che [Vagrant](https://www.vagrantup.com/).
+Do you need a Wordpress website to run on a Virtual Private Server (VPS) or in your locale machine? Do you have a Wordpress website and you need a local copy for test purpose? Wordpress for VPS help you to create easily a running wordpress website on your local machine or remote VPS.
 
-Una volta installati questi prerequisiti sarà sufficiente eseguire i seguenti passi:
+Prerequisites for this project is [Vagrant](https://www.vagrantup.com/) that can be used to deploy your Wordpress stack in local on a remote VPS. For a local installation you need [Virtual Box](https://www.virtualbox.org/) installed on your local machine.
+
+Once all prerequisites are up and running run the following commands.
 
 ```
 1. cd  <work_dir>
@@ -11,26 +12,25 @@ Una volta installati questi prerequisiti sarà sufficiente eseguire i seguenti p
 3. cd vps
 4. vagrant up
 5. sudo vi /etc/hosts
-6. Aggiungere questa riga al file:
+6. Add this line to your /etc/hosts file:
    192.168.100.2   www.mywebiste.com
 ```
 
-Per vedere il sito web funzionante aprire il browser e accedere all'indirizzo:
+To run your website open a browser and type the following address in the address bar:
 
 ```
-www.mywebiste.co
+www.mywebiste.com
 ```
 
-Per accedere al pannello di amministrazione accedere all'URL:
+The administration panel can be accessed from the following URL:
 
 ```
 www.mywebiste.co/wp-admin
 ```
 
-e inserire le credenziali
+use the following credentials that you can change once accessed.
 
 ```
 Nome utente o indirizzo email: user
 Password: password
 ```
-
