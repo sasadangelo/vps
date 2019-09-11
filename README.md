@@ -9,7 +9,14 @@ The tool use Vagrant as abstraction layer on your Virtual Server provider to man
 - MySQL
 - PHP 7
 
-You can configure the files ```wp-install/configure.sh``` and ```wp-install/configure_wp.sh``` to customize:
+## Prerequisites
+
+Prerequisites for this project is [Vagrant](https://www.vagrantup.com/) that can be used to deploy your Wordpress stack in local on a remote VPS. For a local installation you need [Virtual Box](https://www.virtualbox.org/) installed on your local machine. The tool use an Ubuntu Xenial 16.04 as virtual machine.
+
+## Wordpress on Local Virtual Machine
+
+Configure the files ```wp-install/configure.sh``` and ```wp-install/configure_wp.sh``` to customize your Wordpress installation. You can configure:
+
 - the linux account that owns the wordpress files
 - the website domain
 - the database name
@@ -19,13 +26,7 @@ You can configure the files ```wp-install/configure.sh``` and ```wp-install/conf
 - the Wordpress theme
 - the Wordpress plugins
 
-## Prerequisites
-
-Prerequisites for this project is [Vagrant](https://www.vagrantup.com/) that can be used to deploy your Wordpress stack in local on a remote VPS. For a local installation you need [Virtual Box](https://www.virtualbox.org/) installed on your local machine. The tool use an Ubuntu Xenial 16.04 as virtual machine.
-
-## Wordpress on Local Virtual Machine
-
-Once all prerequisites are up and running run the following commands.
+Run the following commands.
 
 ```
 1. cd  <work_dir>
