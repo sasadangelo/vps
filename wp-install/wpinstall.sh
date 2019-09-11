@@ -5,9 +5,10 @@ MYSQL_PASSWD=root
 BACKUP_FILE=""
 BACKUP_FILENAME=""
 CONFIG_WP="$SCRIPT_DIR/configure_wp.sh"
-TMP="/tmp"
+TMP="$SCRIPT_DIR/tmp"
 
 source $SCRIPT_DIR/configure.sh
+source $SCRIPT_DIR/configure_wp.sh
 
 ENCRYPTED_PASSWD=$(openssl passwd -1 $HOST_PASSWD)
 
@@ -188,15 +189,15 @@ configure_wp_aspect() {
 # Return: none
 ###################################################################
 configure_wp_config() {
+
     echo "====== Configure wp-config.php"
-    if ! grep -q "define('FS_METHOD', 'direct');" $DOCUMENT_ROOT/$DOMAIN/wp-config.php;
-    then
-        sudo su - $HOST_USER -c "echo \"define('FS_METHOD', 'direct');\" >> $DOCUMENT_ROOT/$DOMAIN/wp-config.php"
-    fi
-    if ! grep -q "define('WP_MEMORY_LIMIT', '3000M');" $DOCUMENT_ROOT/$DOMAIN/wp-config.php;
-    then
-        sudo su - $HOST_USER -c "echo \"define('WP_MEMORY_LIMIT', '3000M');\" >> $DOCUMENT_ROOT/$DOMAIN/wp-config.php"
-    fi
+    cat >> $WP_CONFIG_FILE << EOL
+/**
+ * Configure WP dashboard direct FTP and memory limit.
+ */
+ define('FS_METHOD', 'direct');
+ define('WP_MEMORY_LIMIT', '3000M');
+EOL
 }
 
 ###################################################################
@@ -230,14 +231,14 @@ configure_wp() {
 # Return: none
 ###################################################################
 restore_wp() {
-    echo "===== Import wordpress database and files"
-    mysql -u $MYSQL_USER -p$MYSQL_PASSWD $DB_NAME < $SCRIPT_DIR/$DB_NAME.sql
+    echo "===== Import wordpress database"
+    mysql -u $MYSQL_USER -p$MYSQL_PASSWD $DB_NAME < $TMP/$BACKUP_FILENAME/$DB_NAME.sql
 
-    # Import wordpress files
-    cp -R $SCRIPT_DIR/wordpress/uploads $DOCUMENT_ROOT/$DOMAIN/wp-content
+    echo "===== Import wordpress images "
+    cp -R $SCRIPT_DIR/wordpress/* $DOCUMENT_ROOT/$DOMAIN/wp-content
 
-    # Change file permission on wp-content wordpress folder
-    chown -R www-data:www-data $WP_CONTENT_FOLDER
+    echo "===== Hardening wordpress"
+    hardening_wp
 }
 
 ###################################################################
@@ -250,9 +251,9 @@ restore_wp() {
 configure_nginx() {
     echo "====== configure nginx"
     # Configure NGINX
-    sed "s:DOCUMENT_ROOT:$DOCUMENT_ROOT:g" /vagrant/wp-install/nginx/site > /vagrant/tmp/site
-    sed -i "s:DOMAIN:$DOMAIN:g" /vagrant/tmp/site
-    sudo cp /vagrant/tmp/site /etc/nginx/sites-available/$DOMAIN
+    sed "s:DOCUMENT_ROOT:$DOCUMENT_ROOT:g" $SCRIPT_DIR/nginx/site > $TMP/site
+    sed -i "s:DOMAIN:$DOMAIN:g" $TMP/site
+    sudo cp $TMP/site /etc/nginx/sites-available/$DOMAIN
     sudo ln -sf /etc/nginx/sites-available/$DOMAIN /etc/nginx/sites-enabled/$DOMAIN
     sudo service nginx restart
 }
@@ -265,20 +266,36 @@ configure_nginx() {
 # Return: none
 ###################################################################
 install_wp() {
-    echo "================================================================="
-    echo "Awesome WordPress Installer!!"
-    echo "================================================================="
-    mkdir -p /vagrant/tmp
+    echo "====== Install basic wordpress"
     create_account
     download_wp
     create_db
     deploy_wp
+    hardening_wp
     configure_wp
     configure_nginx
-    rm -rf /vagrant/tmp
-    echo "================================================================="
-    echo "Installation is complete."
-    echo "================================================================="
+}
+
+###################################################################
+# hardening_wp
+#
+# Input: none
+# Description: configure ownership and file permissions to secure
+#              the wordpress installation.
+#              https://wordpress.org/support/article/changing-file-permissions/#permission-scheme-for-wordpress
+#              https://wordpress.org/support/article/hardening-wordpress/
+# Return: none
+###################################################################
+hardening_wp() {
+    echo "====== Hardening wordpress installation"
+    usermod -G www-data webuser
+    chown -R $HOST_USER:www-data $DOCUMENT_ROOT/$DOMAIN
+    find $DOCUMENT_ROOT/$DOMAIN -type d -exec chmod 755 {} \;
+    find $DOCUMENT_ROOT/$DOMAIN -type f -exec chmod 644 {} \;
+    chmod 775 $WP_CONTENT_FOLDER/plugins
+    chmod 775 $WP_CONTENT_FOLDER/themes
+    chmod 775 $WP_CONTENT_FOLDER/uploads
+    chmod 640 $DOCUMENT_ROOT/$DOMAIN/wp-config.php
 }
 
 ###################################################################
@@ -295,6 +312,7 @@ install_wp() {
 #     None
 ###################################################################
 load_config_wp() {
+    echo "====== Load wordpress configuration"
     source $CONFIG_WP
 }
 
@@ -337,7 +355,7 @@ parse_parms() {
     echo "====== parse parameters"
 
     while [ $# -gt 0 ]; do
-        CPARM=$1; export CPARM
+        CPARM="$1"; export CPARM
         shift
         case ${CPARM} in
             -h | --help)
@@ -381,6 +399,7 @@ parse_parms() {
 # Return: none
 ###################################################################
 extract_wp() {
+    echo "====== Extract backup file"
     mkdir -p $TMP/$BACKUP_FILENAME
     unzip $BACKUP_FILE -d $TMP/$BACKUP_FILENAME
     CONFIG_WP=$TMP/$BACKUP_FILENAME/configure_wp.sh
@@ -393,22 +412,23 @@ extract_wp() {
 # Description: the main procedure
 # Return: none
 ###################################################################
-main() {
-    parse_parms
+echo "================================================================="
+echo "Awesome WordPress Installer!!"
+echo "================================================================="
+parse_parms "$@"
 
-    if [ "$BACKUP_FILE" != "" ]
-    then
-        extract_wp
-        load_config_wp
-        install_wp
-        restore_wp
-    else
-        load_config_wp
-        install_wp
-    fi
-}
-
-###################################################################
-# Main block
-###################################################################
-main
+mkdir -p $TMP
+if [ "$BACKUP_FILE" != "" ]
+then
+    extract_wp
+    load_config_wp
+    install_wp
+    restore_wp
+else
+    load_config_wp
+    install_wp
+fi
+rm -rf $TMP
+echo "================================================================="
+echo "Installation is complete."
+echo "================================================================="

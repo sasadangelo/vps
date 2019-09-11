@@ -1,7 +1,6 @@
-#WEBMASTER_USER=webmaster
-#WEBMASTER_PASSWORD=webmaster
-
 # The default locale used by our VPS
+SCRIPT_DIR="/vagrant"
+
 export LANGUAGE=en_US.UTF-8
 export LANG=en_US.UTF-8
 export LC_ALL=en_US.UTF-8
@@ -31,8 +30,8 @@ mysql_go() {
     # it the following two echo commands are used to set the root
     # password equal to "root", this will be changed later by the
     # administrator.
-    echo "mysql-server-5.5 mysql-server/root_password password root" | sudo debconf-set-selections
-    echo "mysql-server-5.5 mysql-server/root_password_again password root" | sudo debconf-set-selections
+    echo "mysql-server-5.7 mysql-server/root_password password root" | sudo debconf-set-selections
+    echo "mysql-server-5.7 mysql-server/root_password_again password root" | sudo debconf-set-selections
     sudo apt-get -y install mysql-client mysql-server
 }
 
@@ -41,11 +40,12 @@ mysql_go() {
 #
 # Input: none
 # Description: install PHP packages. PHP is a prerequisites for
-#              Wordpress.
+#              Wordpress. php7.0-xml is used by WP Google Map 
+#              plugin.
 # Return: none
 ###################################################################
 php_go() {
-    sudo apt-get -y install php5-fpm php5-cli php5-gd php5-mysql
+    sudo apt-get -y install php7.0 php7.0-gd php7.0-mysql php7.0-curl php7.0-xml 
 }
 
 ###################################################################
@@ -65,9 +65,8 @@ php_go() {
 ###################################################################
 tools_go() {
     sudo locale-gen en_US.UTF-8
-    sudo dpkg-reconfigure locales
-    sudo apt-get -y install vsftpd
-    sudo apt-get -y install sendmail
+    sudo dpkg-reconfigure --frontend noninteractive locales
+    sudo apt-get -y install vsftpd sendmail unzip
 }
 
 ###################################################################
@@ -137,6 +136,17 @@ update_go() {
 }
 
 ###################################################################
+# wpinstall_go
+#
+# Input: none
+# Description: this function install Wordpress for San Patrignano Website
+# Return: none
+###################################################################
+wpinstall_go() {
+    $SCRIPT_DIR/wp-install/wpinstall.sh
+}
+
+###################################################################
 # main
 #
 # Input: none
@@ -151,6 +161,7 @@ main() {
     php_go
     nginx_go
     wpcli_go
+    wpinstall_go
     create_lock
 }
 

@@ -18,3 +18,7 @@ WP_PLUGINS="antispam-bee,better-font-awesome,contact-form-7,cookie-law-info, \
 	php-code-widget,re-add-underline-justify,custom-css-js, \
 	social-media-widget,w3-total-cache,widget-logic,widgets-on-pages, \
 	wordpress-seo, wp-google-maps"
+
+# Variables
+WP_CONTENT_FOLDER=$DOCUMENT_ROOT/$DOMAIN/wp-content
+WP_CONFIG_FILE=$DOCUMENT_ROOT/$DOMAIN/wp-config.php
