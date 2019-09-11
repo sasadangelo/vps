@@ -6,7 +6,7 @@ Do you need a Wordpress website to run on a Virtual Private Server (VPS) or in y
 
 Prerequisites for this project is [Vagrant](https://www.vagrantup.com/) that can be used to deploy your Wordpress stack in local on a remote VPS. For a local installation you need [Virtual Box](https://www.virtualbox.org/) installed on your local machine.
 
-## Local Virtual Machine with Wordpress website
+## Wordpress on Local Virtual Machine
 
 Once all prerequisites are up and running run the following commands.
 
