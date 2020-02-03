@@ -1,10 +1,32 @@
-# San Patrignano Website
+# Wordpress for Virtual Private Server (VPS)
 
-Questo è un progetto per realizzare un sito web fake della comunità di San Patrignano a scopo di demo per il nuovo chatbot che si sta realizzando in collaborazione con la comunità di San Patrignano.
+Do you need a Wordpress website to run on a Virtual Private Server (VPS) or in your locale machine? Do you have a Wordpress website and you need a local copy for test purpose? Wordpress for VPS help you to create easily a running wordpress website on your local machine or remote VPS.
 
-Per avere il sito web funzionante sulla vostra macchine è necessario scaricare e installare sia [Virtual Box](https://www.virtualbox.org/) che [Vagrant](https://www.vagrantup.com/).
+The tool use Vagrant as abstraction layer on your Virtual Server provider to manage its lifecycle. The following Wordpress prerequisites are installed on the Virtual Machine:
 
-Una volta installati questi prerequisiti sarà sufficiente eseguire i seguenti passi:
+- Ubuntu Xenial 16.04
+- Nginx
+- MySQL
+- PHP 7
+
+## Prerequisites
+
+Prerequisites for this project is [Vagrant](https://www.vagrantup.com/) that can be used to deploy your Wordpress stack in local on a remote VPS. For a local installation you need [Virtual Box](https://www.virtualbox.org/) installed on your local machine. The tool use an Ubuntu Xenial 16.04 as virtual machine. I run all tests on Mac computer, you can easily port the code on other operating systems with small changes.
+
+## Wordpress on Local Virtual Machine
+
+Configure the files ```wp-install/configure.sh``` and ```wp-install/configure_wp.sh``` to customize your Wordpress installation. You can configure:
+
+- the linux account that owns the wordpress files
+- the website domain
+- the database name
+- the database credentials
+- the Wordpress name and description
+- the Wordpress credentials
+- the Wordpress theme
+- the Wordpress plugins
+
+Run the following commands.
 
 ```
 1. cd  <work_dir>
@@ -12,26 +34,25 @@ Una volta installati questi prerequisiti sarà sufficiente eseguire i seguenti p
 3. cd vps
 4. vagrant up
 5. sudo vi /etc/hosts
-6. Aggiungere questa riga al file:
+6. Add this line to your /etc/hosts file:
    192.168.100.2   www.mywebiste.com
 ```
 
-Per vedere il sito web funzionante aprire il browser e accedere all'indirizzo:
+To run your website open a browser and type the following address in the address bar:
 
 ```
-www.mywebiste.co
+www.mywebiste.com
 ```
 
-Per accedere al pannello di amministrazione accedere all'URL:
+The administration panel can be accessed from the following URL:
 
 ```
 www.mywebiste.co/wp-admin
 ```
 
-e inserire le credenziali
+use the following credentials that you can change once accessed.
 
 ```
 Nome utente o indirizzo email: user
 Password: password
 ```
-
