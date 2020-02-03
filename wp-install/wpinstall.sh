@@ -176,8 +176,11 @@ configure_wp_aspect() {
     echo "====== configure wordpress aspect"
 
     # Install the Theme
-    sudo su - $HOST_USER -c "cd $DOCUMENT_ROOT/$DOMAIN; \
+    if [ ! -z "$WP_THEME" ]
+    then
+        sudo su - $HOST_USER -c "cd $DOCUMENT_ROOT/$DOMAIN; \
         wp theme install $WP_THEME --activate"
+    fi
 }
 
 ###################################################################
@@ -191,7 +194,7 @@ configure_wp_aspect() {
 configure_wp_config() {
 
     echo "====== Configure wp-config.php"
-    cat >> $WP_CONFIG_FILE << EOL
+    sudo tee -a $WP_CONFIG_FILE > /dev/null << EOL
 /**
  * Configure WP dashboard direct FTP and memory limit.
  */
@@ -224,24 +227,6 @@ configure_wp() {
 }
 
 ###################################################################
-# import:_wp
-#
-# Input: none
-# Description: this function import WordPress db and site images
-# Return: none
-###################################################################
-restore_wp() {
-    echo "===== Import wordpress database"
-    mysql -u $MYSQL_USER -p$MYSQL_PASSWD $DB_NAME < $TMP/$BACKUP_FILENAME/$DB_NAME.sql
-
-    echo "===== Import wordpress images "
-    cp -R $SCRIPT_DIR/wordpress/* $DOCUMENT_ROOT/$DOMAIN/wp-content
-
-    echo "===== Hardening wordpress"
-    hardening_wp
-}
-
-###################################################################
 # configure_nginx
 #
 # Input: none
@@ -271,8 +256,8 @@ install_wp() {
     download_wp
     create_db
     deploy_wp
-    hardening_wp
     configure_wp
+    hardening_wp
     configure_nginx
 }
 
@@ -288,32 +273,26 @@ install_wp() {
 ###################################################################
 hardening_wp() {
     echo "====== Hardening wordpress installation"
-    usermod -G www-data webuser
-    chown -R $HOST_USER:www-data $DOCUMENT_ROOT/$DOMAIN
-    find $DOCUMENT_ROOT/$DOMAIN -type d -exec chmod 755 {} \;
-    find $DOCUMENT_ROOT/$DOMAIN -type f -exec chmod 644 {} \;
-    chmod 775 $WP_CONTENT_FOLDER/plugins
-    chmod 775 $WP_CONTENT_FOLDER/themes
-    chmod 775 $WP_CONTENT_FOLDER/uploads
-    chmod 640 $DOCUMENT_ROOT/$DOMAIN/wp-config.php
-}
-
-###################################################################
-# load_config_wp
-#
-# Input Parameters:
-#     none
-#
-# Description:
-#     Load Wordpress configuration from project configure_wp.sh files
-#     or from a backup file.
-#
-# Return:
-#     None
-###################################################################
-load_config_wp() {
-    echo "====== Load wordpress configuration"
-    source $CONFIG_WP
+    sudo usermod -G www-data $HOST_USER 
+    sudo chown -R $HOST_USER:www-data $DOCUMENT_ROOT/$DOMAIN
+    sudo find $DOCUMENT_ROOT/$DOMAIN -type d -exec chmod 755 {} \;
+    sudo find $DOCUMENT_ROOT/$DOMAIN -type f -exec chmod 644 {} \;
+    sudo find $WP_CONTENT_FOLDER/plugins -type d -exec chmod 775 {} \;
+    sudo find $WP_CONTENT_FOLDER/plugins -type f -exec chmod 664 {} \;
+    sudo find $WP_CONTENT_FOLDER/languages -type d -exec chmod 775 {} \;
+    sudo find $WP_CONTENT_FOLDER/languages -type f -exec chmod 664 {} \;
+    sudo find $WP_CONTENT_FOLDER/upgrade -type d -exec chmod 775 {} \;
+    sudo find $WP_CONTENT_FOLDER/upgrade -type f -exec chmod 664 {} \;
+    sudo find $WP_CONTENT_FOLDER/themes -type d -exec chmod 775 {} \;
+    sudo find $WP_CONTENT_FOLDER/themes -type f -exec chmod 664 {} \;
+    sudo find $WP_CONTENT_FOLDER/uploads -type d -exec chmod 775 {} \;
+    sudo find $WP_CONTENT_FOLDER/uploads -type f -exec chmod 664 {} \;
+    sudo find $WP_CONTENT_FOLDER/cache -type d -exec chmod 775 {} \;
+    sudo find $WP_CONTENT_FOLDER/cache -type f -exec chmod 664 {} \;
+    sudo chmod 660 $DOCUMENT_ROOT/$DOMAIN/wp-config.php
+    sudo touch $DOCUMENT_ROOT/$DOMAIN/nginx.conf
+    sudo chown $HOST_USER:www-data $DOCUMENT_ROOT/$DOMAIN/nginx.conf
+    sudo chmod 664 $DOCUMENT_ROOT/$DOMAIN/nginx.conf
 }
 
 ###################################################################
@@ -334,75 +313,8 @@ usage() {
     echo "./wpinstall.sh --help"
     echo ""
     echo "OPTIONS:"
-    echo "-h, --help                  Get this usage text"
-    echo "-r, --restore <BACKUP FILE>  BACKUP FILE is the backup file to restore."
-}
-
-###################################################################
-# parse_parms
-#
-# Input Parameters:
-#     none
-#
-# Description:
-#     This function validates the input parameters.
-#
-# Return:
-#     None
-###################################################################
-parse_parms() {
-    local CPARM
-    echo "====== parse parameters"
-
-    while [ $# -gt 0 ]; do
-        CPARM="$1"; export CPARM
-        shift
-        case ${CPARM} in
-            -h | --help)
-                usage
-            ;;
-            -r | --restore)
-                BACKUP_FILE=$1; shift
-            ;;
-            *)
-                usage 1 "Invalid argument ${CPARM}"
-            ;;
-        esac
-    done
-
-    if [ "$BACKUP_FILE" != "" ]
-    then
-        if [ ! -e $BACKUP_FILE ]
-        then
-            echo "ERROR: file $BACKUP_FILE does not exist."
-            exit 1
-        fi
-        if [ ! -f $BACKUP_FILE ]
-        then
-            echo "ERROR: file $BACKUP_FILE must be a valid file."
-            exit 1
-        fi
-        if [ ${BACKUP_FILE: -4} != ".zip" ]
-        then
-            echo "ERROR: file $BACKUP_FILE is not a zip file."
-            exit 1
-        fi
-        BACKUP_FILENAME=$(basename $BACKUP_FILE)
-    fi
-}
-
-###################################################################
-# extract_wp
-#
-# Input: none
-# Description: extract the backup in /tmp/<backup file name>
-# Return: none
-###################################################################
-extract_wp() {
-    echo "====== Extract backup file"
-    mkdir -p $TMP/$BACKUP_FILENAME
-    unzip $BACKUP_FILE -d $TMP/$BACKUP_FILENAME
-    CONFIG_WP=$TMP/$BACKUP_FILENAME/configure_wp.sh
+    echo "-h, --help  Get this usage text"
+    exit $1
 }
 
 ###################################################################
@@ -415,19 +327,8 @@ extract_wp() {
 echo "================================================================="
 echo "Awesome WordPress Installer!!"
 echo "================================================================="
-parse_parms "$@"
-
 mkdir -p $TMP
-if [ "$BACKUP_FILE" != "" ]
-then
-    extract_wp
-    load_config_wp
-    install_wp
-    restore_wp
-else
-    load_config_wp
-    install_wp
-fi
+install_wp
 rm -rf $TMP
 echo "================================================================="
 echo "Installation is complete."
