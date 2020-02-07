@@ -112,75 +112,11 @@ deploy_wp() {
 configure_wp_settings() {
     echo "===== configure wordpress settings"
 
-    # Modify Settings->General
-
-    # Modify blog description
+    # Modify home and site url
     sudo su - $HOST_USER -c "cd $DOCUMENT_ROOT/$DOMAIN; \
-        wp option update blogdescription \"$WP_DESCRIPTION\""
-    # Modify Settings->Reading
+        wp option update siteurl \"http://$DOMAIN\""
     sudo su - $HOST_USER -c "cd $DOCUMENT_ROOT/$DOMAIN; \
-        wp option update posts_per_page 6"
-    sudo su - $HOST_USER -c "cd $DOCUMENT_ROOT/$DOMAIN; \
-        wp option update posts_per_rss 7"
-
-    # Modify Settings->Discussions
-    sudo su - $HOST_USER -c "cd $DOCUMENT_ROOT/$DOMAIN; \
-       wp option update thread_comments 0"
-    sudo su - $HOST_USER -c "cd $DOCUMENT_ROOT/$DOMAIN; \
-       wp option update moderation_notify 0"
-    sudo su - $HOST_USER -c "cd $DOCUMENT_ROOT/$DOMAIN; \
-       wp option update comment_whitelist 0"
-    sudo su - $HOST_USER -c "cd $DOCUMENT_ROOT/$DOMAIN; \
-       wp option update show_avatars 0"
-
-    # Modify Settings->Permalink
-    sudo su - $HOST_USER -c "cd $DOCUMENT_ROOT/$DOMAIN; \
-       wp rewrite structure '/%postname%.html' --hard"
-    sudo su - $HOST_USER -c "cd $DOCUMENT_ROOT/$DOMAIN; \
-       wp rewrite flush --hard"
-}
-
-###################################################################
-# configure_wp_plugins
-#
-# Input: none
-# Description: this function install and configure Wordpress plugins.
-# Return: none
-###################################################################
-configure_wp_plugins() {
-    echo "====== configure wordpress plugins"
-
-    # Delete akismet and hello dolly plugins
-    sudo su - $HOST_USER -c "cd $DOCUMENT_ROOT/$DOMAIN; \
-       wp plugin delete akismet"
-    sudo su - $HOST_USER -c "cd $DOCUMENT_ROOT/$DOMAIN; \
-       wp plugin delete hello"
-
-    # Install plugins
-    export IFS=","
-    for plugin in $WP_PLUGINS; do
-        sudo su - $HOST_USER -c "cd $DOCUMENT_ROOT/$DOMAIN; \
-            wp plugin install $plugin --activate"
-    done
-}
-
-###################################################################
-# configure_wp_aspect
-#
-# Input: none
-# Description: this function configure Wordpress aspects like
-#              themes, menu, etc.
-# Return: none
-###################################################################
-configure_wp_aspect() {
-    echo "====== configure wordpress aspect"
-
-    # Install the Theme
-    if [ ! -z "$WP_THEME" ]
-    then
-        sudo su - $HOST_USER -c "cd $DOCUMENT_ROOT/$DOMAIN; \
-        wp theme install $WP_THEME --activate"
-    fi
+        wp option update home \"http://$DOMAIN\""
 }
 
 ###################################################################
@@ -212,18 +148,30 @@ EOL
 ###################################################################
 configure_wp() {
     echo "==== configure wordpress"
+    # Configure Wordpress
+    configure_wp_config
 
     # Modify Settings configuration
     configure_wp_settings
+}
 
-    # Install and configure Wordpress plugins
-    configure_wp_plugins
+###################################################################
+# restore_wp
+#
+# Input: none
+# Description: this function restore a WordPress backup.
+# Return: none
+###################################################################
+restore_wp() {
+    echo "====== Extract backup file"
+    unzip -o $BACKUP_FILE -d $TMP/wordpress
 
-    # Configure Wordpress aspect
-    configure_wp_aspect
+    echo "===== Import wordpress database"
+    mysql -u $MYSQL_USER -p$MYSQL_PASSWD $DB_NAME < $TMP/wordpress/$DB_NAME.sql
+    #rm -f $TMP/wordpress/$DB_NAME.sql
 
-    # Configure Wordpress dashboard
-    configure_wp_config
+    echo "===== Import wordpress files"
+    sudo cp -R $SCRIPT_DIR/tmp/wordpress/* $DOCUMENT_ROOT/$DOMAIN/
 }
 
 ###################################################################
@@ -241,24 +189,6 @@ configure_nginx() {
     sudo cp $TMP/site /etc/nginx/sites-available/$DOMAIN
     sudo ln -sf /etc/nginx/sites-available/$DOMAIN /etc/nginx/sites-enabled/$DOMAIN
     sudo service nginx restart
-}
-
-###################################################################
-# install_wp
-#
-# Input: none
-# Description: this function install a default wordpress
-# Return: none
-###################################################################
-install_wp() {
-    echo "====== Install basic wordpress"
-    create_account
-    download_wp
-    create_db
-    deploy_wp
-    configure_wp
-    hardening_wp
-    configure_nginx
 }
 
 ###################################################################
@@ -321,11 +251,98 @@ usage() {
         echo $MESSAGE
     fi
     echo "Usage:"
-    echo "./wpinstall.sh [OPTIONS]"
+    echo "./wprestore.sh OPTIONS"
     echo ""
     echo "OPTIONS:"
-    echo "-h, --help  Get this usage text"
+    echo "-h, --help                   Get this usage text"
+    echo "-r, --restore <BACKUP FILE>  BACKUP FILE is the backup file to restore."
     exit $EXIT_CODE
+}
+
+###################################################################
+# parse_parms
+#
+# Input Parameters:
+#     none
+#
+# Description:
+#     This function validates the input parameters.
+#
+# Return:
+#     None
+###################################################################
+parse_parms() {
+    local CPARM
+    echo "====== parse parameters"
+
+    while [ $# -gt 0 ]; do
+        CPARM="$1"; export CPARM
+        shift
+        case ${CPARM} in
+            -h | --help)
+                usage 0
+            ;;
+            -r | --restore)
+                BACKUP_FILE=$1; shift
+            ;;
+            *)
+                usage 1 "Invalid argument ${CPARM}"
+            ;;
+        esac
+    done
+
+    if [ "$BACKUP_FILE" != "" ]
+    then
+        if [ ! -e $BACKUP_FILE ]
+        then
+            echo "ERROR: file $BACKUP_FILE does not exist."
+            exit 1
+        fi
+        if [ ! -f $BACKUP_FILE ]
+        then
+            echo "ERROR: file $BACKUP_FILE must be a valid file."
+            exit 1
+        fi
+        if [ ${BACKUP_FILE: -4} != ".zip" ]
+        then
+            echo "ERROR: file $BACKUP_FILE is not a zip file."
+            exit 1
+        fi
+        BACKUP_FILENAME=$(basename $BACKUP_FILE)
+    else
+        usage 1 "ERROR: no backup file specified."
+    fi
+}
+
+###################################################################
+# install_wp
+#
+# Input: none
+# Description: this function install a default wordpress
+# Return: none
+###################################################################
+install_wp() {
+    echo "====== Install basic wordpress"
+    create_account
+    download_wp
+    create_db
+    deploy_wp
+    restore_wp
+    configure_wp
+    hardening_wp
+    configure_nginx
+}
+
+###################################################################
+# extract_wp
+#
+# Input: none
+# Description: extract the backup in /tmp/<backup file name>
+# Return: none
+###################################################################
+extract_wp() {
+    echo "====== Extract backup file"
+    unzip $BACKUP_FILE -d $TMP/wordpress
 }
 
 ###################################################################
@@ -338,7 +355,10 @@ usage() {
 echo "================================================================="
 echo "Awesome WordPress Installer!!"
 echo "================================================================="
+parse_parms $*
+
 mkdir -p $TMP
+echo "====== Restore backup file $BACKUP_FILE"
 install_wp
 rm -rf $TMP
 echo "================================================================="

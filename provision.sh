@@ -1,6 +1,7 @@
 # The default locale used by our VPS
 SCRIPT_DIR="/vagrant"
 
+BACKUP_FILE=""
 export LANGUAGE=en_US.UTF-8
 export LANG=en_US.UTF-8
 export LC_ALL=en_US.UTF-8
@@ -143,7 +144,65 @@ update_go() {
 # Return: none
 ###################################################################
 wpinstall_go() {
-    $SCRIPT_DIR/wp-install/wpinstall.sh
+    if [ "$BACKUP_FILE" != "" ]
+    then
+        $SCRIPT_DIR/wp-install/wprestore.sh "-r $SCRIPT_DIR/$BACKUP_FILE"
+    else
+        $SCRIPT_DIR/wp-install/wpinstall.sh
+    fi
+}
+
+###################################################################
+# parse_parms
+#
+# Input Parameters:
+#     none
+#
+# Description:
+#     This function validates the input parameters.
+#
+# Return:
+#     None
+###################################################################
+parse_parms() {
+    local CPARM
+    echo "====== parse parameters"
+
+    while [ $# -gt 0 ]; do
+        CPARM="$1"; export CPARM
+        shift
+        case ${CPARM} in
+            -h | --help)
+                usage
+            ;;
+            -r | --restore)
+                BACKUP_FILE=$1; shift
+            ;;
+            *)
+                usage 1 "Invalid argument ${CPARM}"
+            ;;
+        esac
+    done
+
+    if [ "$BACKUP_FILE" != "" ]
+    then
+        if [ ! -e $SCRIPT_DIR/$BACKUP_FILE ]
+        then
+            echo "$(pwd)"
+            echo "ERROR: file $BACKUP_FILE does not exist in $SCRIPT_DIR folder."
+            exit 1
+        fi
+        if [ ! -f $SCRIPT_DIR/$BACKUP_FILE ]
+        then
+            echo "ERROR: file $BACKUP_FILE must be a valid file."
+            exit 1
+        fi
+        if [ ${BACKUP_FILE: -4} != ".zip" ]
+        then
+            echo "ERROR: file $BACKUP_FILE is not a zip file."
+            exit 1
+        fi
+    fi
 }
 
 ###################################################################
@@ -154,6 +213,7 @@ wpinstall_go() {
 # Return: none
 ###################################################################
 main() {
+    parse_parms "$@"
     check_lock
     update_go
     tools_go
@@ -168,4 +228,4 @@ main() {
 ###################################################################
 # Main block
 ###################################################################
-main
+main "$@"
