@@ -267,7 +267,7 @@ install_wp() {
 # Input: none
 # Description: configure ownership and file permissions to secure
 #              the wordpress installation.
-#              https://wordpress.org/support/article/changing-file-permissions/#permission-scheme-for-wordpress
+#              https://wordpress.org/support/article/changing-file-permissions/permission-scheme-for-wordpress
 #              https://wordpress.org/support/article/hardening-wordpress/
 # Return: none
 ###################################################################
@@ -295,6 +295,7 @@ hardening_wp() {
         sudo find $WP_CONTENT_FOLDER/cache -type d -exec chmod 775 {} \;
         sudo find $WP_CONTENT_FOLDER/cache -type f -exec chmod 664 {} \;
     fi
+    sudo chmod 775 $WP_CONTENT_FOLDER
     sudo chmod 660 $DOCUMENT_ROOT/$DOMAIN/wp-config.php
     sudo touch $DOCUMENT_ROOT/$DOMAIN/nginx.conf
     sudo chown $HOST_USER:www-data $DOCUMENT_ROOT/$DOMAIN/nginx.conf
